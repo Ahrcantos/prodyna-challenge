@@ -4,7 +4,7 @@ use raylib::{
     ffi::{Rectangle, Vector2},
 };
 
-use crate::model::{Experience, ExperienceKind, PersonalInformation};
+use crate::model::{Experience, ExperienceKind, PersonalInformation, Skill};
 
 pub trait Drawable {
     fn draw(&self, draw: &mut impl RaylibDraw);
@@ -17,6 +17,7 @@ pub enum Element {
     BulletList(BulletListElement),
     ExperienceList(ExperienceListElement),
     ExpandableSection(ExpandableSectionElement),
+    SkillList(SkillListElement),
 }
 
 impl Drawable for Element {
@@ -26,6 +27,7 @@ impl Drawable for Element {
             Element::BulletList(el) => el.draw(draw),
             Element::ExperienceList(el) => el.draw(draw),
             Element::ExpandableSection(el) => el.draw(draw),
+            Element::SkillList(el) => el.draw(draw),
         }
     }
 
@@ -35,6 +37,7 @@ impl Drawable for Element {
             Element::BulletList(el) => el.size(),
             Element::ExperienceList(el) => el.size(),
             Element::ExpandableSection(el) => el.size(),
+            Element::SkillList(el) => el.size(),
         }
     }
 
@@ -44,6 +47,7 @@ impl Drawable for Element {
             Element::BulletList(el) => el.set_position(position),
             Element::ExperienceList(el) => el.set_position(position),
             Element::ExpandableSection(el) => el.set_position(position),
+            Element::SkillList(el) => el.set_position(position),
         }
     }
 }
@@ -309,5 +313,61 @@ impl Drawable for ExpandableSectionElement {
             x: position.x + 10.0,
             y: position.y + 30.0,
         });
+    }
+}
+
+pub struct SkillListElement {
+    pub position: Vector2,
+    pub skills: Vec<Skill>,
+}
+
+impl Drawable for SkillListElement {
+    fn draw(&self, draw: &mut impl RaylibDraw) {
+        let mut offset_y: f32 = 0.0;
+
+        for skill in &self.skills {
+            draw.draw_text(
+                &skill.name,
+                self.position.x as i32,
+                (self.position.y + offset_y) as i32,
+                20,
+                Color::BLACK,
+            );
+
+            let color = match skill.rating {
+                0..=3 => Color::RED,
+                4..=7 => Color::YELLOW,
+                _ => Color::GREEN,
+            };
+
+            for i in (0..skill.rating).take(10) {
+                let offset_x = (i as f32) * 22.0;
+
+                draw.draw_rectangle(
+                    (self.position.x + 200.0 + offset_x) as i32,
+                    (self.position.y + offset_y) as i32,
+                    20,
+                    20,
+                    color,
+                );
+            }
+
+            offset_y += 22.0;
+        }
+    }
+
+    fn size(&self) -> Rectangle {
+        let height = (self.skills.len() as f32) * 20.0;
+
+        Rectangle {
+            x: self.position.x,
+            y: self.position.y,
+            width: 600.0,
+            height,
+        }
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        self.position = position;
     }
 }

@@ -8,10 +8,10 @@ use raylib::{
 
 use crate::element::{
     BulletListElement, Drawable, Element, ExpandableSectionElement, ExperienceListElement,
-    TitleElement,
+    SkillListElement, TitleElement,
 };
 use crate::model::{
-    EducationExperience, Experience, ExperienceKind, PersonalInformation, WorkExperience,
+    EducationExperience, Experience, ExperienceKind, PersonalInformation, Skill, WorkExperience,
 };
 
 fn main() {
@@ -64,13 +64,34 @@ fn main() {
         Element::ExperienceList(experience_list),
     );
 
-    let bullet_list = BulletListElement {
+    let skill_list = SkillListElement {
         position: Vector2 { x: 0.0, y: 0.0 },
-        items: vec![String::from("Skill 1"), String::from("Skill 2")],
+        skills: vec![
+            Skill {
+                name: String::from("CSS"),
+                rating: 5,
+            },
+            Skill {
+                name: String::from("HTML"),
+                rating: 9,
+            },
+            Skill {
+                name: String::from("Excel"),
+                rating: 1,
+            },
+        ],
     };
 
     let mut skill_section =
-        ExpandableSectionElement::new("Skills", 20.0, 200.0, Element::BulletList(bullet_list));
+        ExpandableSectionElement::new("Skills", 20.0, 200.0, Element::SkillList(skill_list));
+
+    let note_list = BulletListElement {
+        position: Vector2 { x: 0.0, y: 0.0 },
+        items: vec![String::from("Note 1"), String::from("Note 2")],
+    };
+
+    let mut note_section =
+        ExpandableSectionElement::new("Notes", 20.0, 200.0, Element::BulletList(note_list));
 
     while !handle.window_should_close() {
         let mut d = handle.begin_drawing(&thread);
@@ -91,6 +112,10 @@ fn main() {
             skill_section.toggle();
         }
 
+        if note_section.is_inside(mouse_position.into()) && mouse_pressed {
+            note_section.toggle();
+        }
+
         // Draw
         let mut offset_y: f32 = 0.0;
 
@@ -109,5 +134,12 @@ fn main() {
             y: offset_y,
         });
         skill_section.draw(&mut d);
+        offset_y += skill_section.size().height + 25.0;
+
+        note_section.set_position(Vector2 {
+            x: 20.0,
+            y: offset_y,
+        });
+        note_section.draw(&mut d);
     }
 }
