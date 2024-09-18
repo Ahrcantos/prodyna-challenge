@@ -9,6 +9,43 @@ use crate::model::{Experience, ExperienceKind, PersonalInformation};
 pub trait Drawable {
     fn draw(&self, draw: &mut impl RaylibDraw);
     fn size(&self) -> Rectangle;
+    fn set_position(&mut self, position: Vector2);
+}
+
+pub enum Element {
+    Title(TitleElement),
+    BulletList(BulletListElement),
+    ExperienceList(ExperienceListElement),
+    ExpandableSection(ExpandableSectionElement),
+}
+
+impl Drawable for Element {
+    fn draw(&self, draw: &mut impl RaylibDraw) {
+        match self {
+            Element::Title(el) => el.draw(draw),
+            Element::BulletList(el) => el.draw(draw),
+            Element::ExperienceList(el) => el.draw(draw),
+            Element::ExpandableSection(el) => el.draw(draw),
+        }
+    }
+
+    fn size(&self) -> Rectangle {
+        match self {
+            Element::Title(el) => el.size(),
+            Element::BulletList(el) => el.size(),
+            Element::ExperienceList(el) => el.size(),
+            Element::ExpandableSection(el) => el.size(),
+        }
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        match self {
+            Element::Title(el) => el.set_position(position),
+            Element::BulletList(el) => el.set_position(position),
+            Element::ExperienceList(el) => el.set_position(position),
+            Element::ExpandableSection(el) => el.set_position(position),
+        }
+    }
 }
 
 pub struct TitleElement {
@@ -41,9 +78,13 @@ impl Drawable for TitleElement {
         Rectangle {
             x: self.position.x,
             y: self.position.y,
-            width: 100.0,
-            height: 100.0,
+            width: 600.0,
+            height: 54.0,
         }
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        self.position = position;
     }
 }
 
@@ -59,7 +100,7 @@ impl Drawable for BulletListElement {
         for item in &self.items {
             draw.draw_rectangle(
                 self.position.x as i32,
-                (self.position.y + offset_y + 27.0) as i32,
+                (self.position.y + offset_y + 7.0) as i32,
                 10,
                 5,
                 Color::BLACK,
@@ -68,7 +109,7 @@ impl Drawable for BulletListElement {
             draw.draw_text(
                 item,
                 (self.position.x + 20.0) as i32,
-                (self.position.y + offset_y + 20.0) as i32,
+                (self.position.y + offset_y) as i32,
                 20,
                 Color::BLACK,
             );
@@ -78,12 +119,18 @@ impl Drawable for BulletListElement {
     }
 
     fn size(&self) -> Rectangle {
+        let height = (self.items.len() as f32) * 20.0;
+
         Rectangle {
             x: self.position.x,
             y: self.position.y,
-            width: 100.0,
-            height: 100.0,
+            width: 600.0,
+            height,
         }
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        self.position = position;
     }
 }
 
@@ -155,6 +202,112 @@ impl Drawable for ExperienceListElement {
     }
 
     fn size(&self) -> Rectangle {
-        todo!()
+        let height = (self.experiences.len() as f32) * 20.0;
+
+        Rectangle {
+            x: self.position.x,
+            y: self.position.y,
+            width: 600.0,
+            height,
+        }
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        self.position = position;
+    }
+}
+
+pub struct ExpandableSectionElement {
+    position: Vector2,
+    title: String,
+    is_open: bool,
+    content: Box<Element>,
+}
+
+impl ExpandableSectionElement {
+    pub fn new(title: &'static str, x: f32, y: f32, content: Element) -> Self {
+        let mut content = Box::new(content);
+        content.set_position(Vector2 {
+            x: x + 10.0,
+            y: y + 30.0,
+        });
+
+        Self {
+            position: Vector2 { x, y },
+            title: String::from(title),
+            is_open: false,
+            content,
+        }
+    }
+
+    pub fn toggle(&mut self) {
+        self.is_open = !self.is_open
+    }
+
+    pub fn is_inside(&self, position: Vector2) -> bool {
+        let bounding = self.size();
+
+        let inside_x = position.x >= bounding.x && position.x <= (bounding.x + bounding.width);
+        let inside_y = position.y >= bounding.y && position.y <= (bounding.y + bounding.height);
+
+        inside_x && inside_y
+    }
+}
+
+impl Drawable for ExpandableSectionElement {
+    fn draw(&self, draw: &mut impl RaylibDraw) {
+        draw.draw_rectangle(
+            self.position.x as i32,
+            self.position.y as i32,
+            760,
+            24,
+            Color::GRAY,
+        );
+
+        draw.draw_text(
+            &self.title,
+            self.position.x as i32,
+            self.position.y as i32,
+            24,
+            Color::BLACK,
+        );
+
+        if self.is_open {
+            draw.draw_rectangle(
+                self.position.x as i32,
+                (self.position.y + 24.0) as i32,
+                760,
+                (self.content.size().height + 10.0) as i32,
+                Color::LIGHTGRAY,
+            );
+
+            self.content.draw(draw);
+        }
+    }
+
+    fn size(&self) -> Rectangle {
+        if self.is_open {
+            Rectangle {
+                x: self.position.x,
+                y: self.position.y,
+                width: 760.0,
+                height: self.content.size().height + 10.0 + 24.0,
+            }
+        } else {
+            Rectangle {
+                x: self.position.x,
+                y: self.position.y,
+                width: 760.0,
+                height: 24.0,
+            }
+        }
+    }
+
+    fn set_position(&mut self, position: Vector2) {
+        self.position = position;
+        self.content.set_position(Vector2 {
+            x: position.x + 10.0,
+            y: position.y + 30.0,
+        });
     }
 }
