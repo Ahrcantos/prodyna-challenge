@@ -157,7 +157,7 @@ impl Drawable for ExperienceListElement {
             match &experience.kind {
                 ExperienceKind::Education(education_experience) => {
                     let text = format!(
-                        "{} ({})",
+                        "{} ({:.1})",
                         education_experience.school, education_experience.grade
                     );
 
