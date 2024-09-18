@@ -1,17 +1,15 @@
 mod element;
 mod model;
 
-use raylib::{
-    ffi::{Camera2D, Vector2},
-    prelude::*,
-};
+use raylib::{ffi::Vector2, prelude::*};
 
 use crate::element::{
     BulletListElement, Drawable, Element, ExpandableSectionElement, ExperienceListElement,
     SkillListElement, TitleElement,
 };
 use crate::model::{
-    EducationExperience, Experience, ExperienceKind, PersonalInformation, Skill, WorkExperience,
+    Candidate, EducationExperience, Experience, ExperienceKind, PersonalInformation, Skill,
+    WorkExperience,
 };
 
 fn main() {
@@ -20,31 +18,19 @@ fn main() {
         .title("Candidate Viewer")
         .build();
 
-    let camera = Camera2D {
-        offset: Vector2 { x: 0.0, y: 0.0 },
-        target: Vector2 { x: 0.0, y: 0.0 },
-        rotation: 0.0,
-        zoom: 1.0,
-    };
-
-    let title = TitleElement {
-        position: Vector2 { x: 10.0, y: 10.0 },
-        info: PersonalInformation {
+    let candidate = Candidate {
+        personal_info: PersonalInformation {
             first_name: String::from("Max"),
             last_name: String::from("Musterman"),
             job_title: String::from("Engineer"),
         },
-    };
-
-    let experience_list = ExperienceListElement {
-        position: Vector2 { x: 0.0, y: 0.0 },
-        experiences: vec![
+        experience: vec![
             Experience {
-                from_year: String::from("2012"),
-                to_year: String::from("2013"),
+                to_year: String::from("2012"),
+                from_year: String::from("2013"),
                 kind: ExperienceKind::Education(EducationExperience {
-                    school: String::from("University 1"),
                     grade: 2.0,
+                    school: String::from("University 1"),
                 }),
             },
             Experience {
@@ -55,17 +41,6 @@ fn main() {
                 }),
             },
         ],
-    };
-
-    let mut experience_section = ExpandableSectionElement::new(
-        "Experience",
-        20.0,
-        100.0,
-        Element::ExperienceList(experience_list),
-    );
-
-    let skill_list = SkillListElement {
-        position: Vector2 { x: 0.0, y: 0.0 },
         skills: vec![
             Skill {
                 name: String::from("CSS"),
@@ -80,66 +55,76 @@ fn main() {
                 rating: 1,
             },
         ],
+        notes: vec![String::from("Note 1"), String::from("Note 2")],
     };
 
-    let mut skill_section =
-        ExpandableSectionElement::new("Skills", 20.0, 200.0, Element::SkillList(skill_list));
-
-    let note_list = BulletListElement {
-        position: Vector2 { x: 0.0, y: 0.0 },
-        items: vec![String::from("Note 1"), String::from("Note 2")],
-    };
-
-    let mut note_section =
-        ExpandableSectionElement::new("Notes", 20.0, 200.0, Element::BulletList(note_list));
+    let mut elements = build_elements(candidate);
 
     while !handle.window_should_close() {
         let mut d = handle.begin_drawing(&thread);
-
-        let mut d = d.begin_mode2D(camera);
 
         d.clear_background(Color::WHITE);
 
         let mouse_position = d.get_mouse_position();
         let mouse_pressed = d.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT);
 
-        // Handle events
-        if experience_section.is_inside(mouse_position.into()) && mouse_pressed {
-            experience_section.toggle();
-        }
-
-        if skill_section.is_inside(mouse_position.into()) && mouse_pressed {
-            skill_section.toggle();
-        }
-
-        if note_section.is_inside(mouse_position.into()) && mouse_pressed {
-            note_section.toggle();
-        }
-
-        // Draw
         let mut offset_y: f32 = 0.0;
 
-        title.draw(&mut d);
-        offset_y += title.size().height + 25.0;
+        for element in &mut elements {
+            if let Element::ExpandableSection(section) = element {
+                if section.is_inside(mouse_position.into()) && mouse_pressed {
+                    section.toggle();
+                }
+            }
 
-        experience_section.set_position(Vector2 {
-            x: 20.0,
-            y: offset_y,
-        });
-        experience_section.draw(&mut d);
-        offset_y += experience_section.size().height + 25.0;
-
-        skill_section.set_position(Vector2 {
-            x: 20.0,
-            y: offset_y,
-        });
-        skill_section.draw(&mut d);
-        offset_y += skill_section.size().height + 25.0;
-
-        note_section.set_position(Vector2 {
-            x: 20.0,
-            y: offset_y,
-        });
-        note_section.draw(&mut d);
+            element.set_position(Vector2 {
+                x: 20.0,
+                y: offset_y,
+            });
+            element.draw(&mut d);
+            offset_y += element.size().height + 25.0;
+        }
     }
+}
+
+fn build_elements(candidate: Candidate) -> Vec<Element> {
+    let title = TitleElement {
+        position: Vector2 { x: 0.0, y: 0.0 },
+        info: candidate.personal_info,
+    };
+
+    let experience_list = ExperienceListElement {
+        position: Vector2 { x: 0.0, y: 0.0 },
+        experiences: candidate.experience,
+    };
+
+    let experience_section = ExpandableSectionElement::new(
+        "Experience",
+        20.0,
+        100.0,
+        Element::ExperienceList(experience_list),
+    );
+
+    let skill_list = SkillListElement {
+        position: Vector2 { x: 0.0, y: 0.0 },
+        skills: candidate.skills,
+    };
+
+    let skill_section =
+        ExpandableSectionElement::new("Skills", 20.0, 200.0, Element::SkillList(skill_list));
+
+    let note_list = BulletListElement {
+        position: Vector2 { x: 0.0, y: 0.0 },
+        items: candidate.notes,
+    };
+
+    let note_section =
+        ExpandableSectionElement::new("Notes", 20.0, 200.0, Element::BulletList(note_list));
+
+    vec![
+        Element::Title(title),
+        Element::ExpandableSection(experience_section),
+        Element::ExpandableSection(skill_section),
+        Element::ExpandableSection(note_section),
+    ]
 }

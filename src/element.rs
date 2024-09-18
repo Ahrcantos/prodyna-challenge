@@ -357,7 +357,7 @@ impl Drawable for SkillListElement {
     }
 
     fn size(&self) -> Rectangle {
-        let height = (self.skills.len() as f32) * 20.0;
+        let height = (self.skills.len() as f32) * 22.0;
 
         Rectangle {
             x: self.position.x,
