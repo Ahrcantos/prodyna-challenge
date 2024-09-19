@@ -61,6 +61,7 @@ fn main() {
     let mut elements = build_elements(candidate);
 
     while !handle.window_should_close() {
+        let delta = handle.get_frame_time();
         let mut d = handle.begin_drawing(&thread);
 
         d.clear_background(Color::WHITE);
@@ -75,6 +76,8 @@ fn main() {
                 if section.is_inside(mouse_position.into()) && mouse_pressed {
                     section.toggle();
                 }
+
+                section.animate(delta);
             }
 
             element.set_position(Vector2 {

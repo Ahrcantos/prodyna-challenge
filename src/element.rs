@@ -226,6 +226,14 @@ pub struct ExpandableSectionElement {
     title: String,
     is_open: bool,
     content: Box<Element>,
+    status: ExpandableSectionStatus,
+    open_progress: f32,
+}
+
+enum ExpandableSectionStatus {
+    Opening,
+    Closing,
+    Idle,
 }
 
 impl ExpandableSectionElement {
@@ -241,11 +249,27 @@ impl ExpandableSectionElement {
             title: String::from(title),
             is_open: false,
             content,
+            status: ExpandableSectionStatus::Idle,
+            open_progress: 0.0,
         }
     }
 
     pub fn toggle(&mut self) {
-        self.is_open = !self.is_open
+        if self.is_open {
+            self.close();
+        } else {
+            self.open();
+        }
+    }
+
+    fn open(&mut self) {
+        self.is_open = true;
+        self.status = ExpandableSectionStatus::Opening;
+    }
+
+    fn close(&mut self) {
+        self.is_open = false;
+        self.status = ExpandableSectionStatus::Closing;
     }
 
     pub fn is_inside(&self, position: Vector2) -> bool {
@@ -255,6 +279,27 @@ impl ExpandableSectionElement {
         let inside_y = position.y >= bounding.y && position.y <= (bounding.y + bounding.height);
 
         inside_x && inside_y
+    }
+
+    pub fn animate(&mut self, delta: f32) {
+        match self.status {
+            ExpandableSectionStatus::Opening => {
+                self.open_progress += 7.0 * delta;
+
+                if self.open_progress > 1.0 {
+                    self.open_progress = 1.0;
+                    self.status = ExpandableSectionStatus::Idle;
+                }
+            }
+            ExpandableSectionStatus::Closing => {
+                self.open_progress -= 7.0 * delta;
+                if self.open_progress < 0.0 {
+                    self.open_progress = 0.0;
+                    self.status = ExpandableSectionStatus::Idle;
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -276,15 +321,15 @@ impl Drawable for ExpandableSectionElement {
             Color::BLACK,
         );
 
-        if self.is_open {
-            draw.draw_rectangle(
-                self.position.x as i32,
-                (self.position.y + 24.0) as i32,
-                760,
-                (self.content.size().height + 10.0) as i32,
-                Color::LIGHTGRAY,
-            );
+        draw.draw_rectangle(
+            self.position.x as i32,
+            (self.position.y + 24.0) as i32,
+            760,
+            ((self.content.size().height + 10.0) * self.open_progress) as i32,
+            Color::LIGHTGRAY,
+        );
 
+        if self.is_open && matches!(self.status, ExpandableSectionStatus::Idle) {
             self.content.draw(draw);
         }
     }
