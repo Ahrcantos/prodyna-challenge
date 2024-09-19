@@ -335,20 +335,11 @@ impl Drawable for ExpandableSectionElement {
     }
 
     fn size(&self) -> Rectangle {
-        if self.is_open {
-            Rectangle {
-                x: self.position.x,
-                y: self.position.y,
-                width: 760.0,
-                height: self.content.size().height + 10.0 + 24.0,
-            }
-        } else {
-            Rectangle {
-                x: self.position.x,
-                y: self.position.y,
-                width: 760.0,
-                height: 24.0,
-            }
+        Rectangle {
+            x: self.position.x,
+            y: self.position.y,
+            width: 760.0,
+            height: ((self.content.size().height + 10.0) * self.open_progress) + 24.0,
         }
     }
 
